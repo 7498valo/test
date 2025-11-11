@@ -1,38 +1,473 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Web Page</title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <header>
-        <h1>Welcome to My Web Page</h1>
-    </header>
-    <nav>
-        <ul>
-            <li><a href="#home">Home</a></li>
-            <li><a href="#about">About</a></li>
-            <li><a href="#contact">Contact</a></li>
-        </ul>
-    </nav>
-    <main>
-        <section id="home">
-            <h2>Home</h2>
-            <p>This is the home section of the web page.</p>
-        </section>
-        <section id="about">
-            <h2>About</h2>
-            <p>This section contains information about the web page.</p>
-        </section>
-        <section id="contact">
-            <h2>Contact</h2>
-            <p>This section provides contact information.</p>
-        </section>
-    </main>
-    <footer>
-        <p>&copy; 2024 My Web Page</p>
-    </footer>
-</body>
-</html>
+import React, { useState, useEffect } from 'react';
+
+const SushiTypingGame = () => {
+  const [gameState, setGameState] = useState('menu');
+  const [mode, setMode] = useState('normal');
+  const [course, setCourse] = useState('normal');
+  const [currentWord, setCurrentWord] = useState('');
+  const [currentRomaji, setCurrentRomaji] = useState('');
+  const [typedText, setTypedText] = useState('');
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(90);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [missCount, setMissCount] = useState(0);
+  const [combo, setCombo] = useState(0);
+  const [sushiPosition, setSushiPosition] = useState(100);
+  const [showModeSelect, setShowModeSelect] = useState(false);
+
+  const words = {
+    easy: [
+      { japanese: 'まぐろ', romaji: 'maguro', price: 120 },
+      { japanese: 'さけ', romaji: 'sake', price: 100 },
+      { japanese: 'たまご', romaji: 'tamago', price: 140 },
+      { japanese: 'いか', romaji: 'ika', price: 100 },
+      { japanese: 'えび', romaji: 'ebi', price: 100 },
+      { japanese: 'うに', romaji: 'uni', price: 150 },
+      { japanese: 'いくら', romaji: 'ikura', price: 120 },
+      { japanese: 'あじ', romaji: 'aji', price: 100 },
+      { japanese: 'さば', romaji: 'saba', price: 100 },
+      { japanese: 'たこ', romaji: 'tako', price: 100 },
+    ],
+    normal: [
+      { japanese: 'おいしい', romaji: 'oishii', price: 280 },
+      { japanese: 'ありがとう', romaji: 'arigatou', price: 320 },
+      { japanese: 'しんせん', romaji: 'shinsen', price: 280 },
+      { japanese: 'すしや', romaji: 'sushiya', price: 260 },
+      { japanese: 'かいてん', romaji: 'kaiten', price: 280 },
+      { japanese: 'おちゃ', romaji: 'ocha', price: 200 },
+      { japanese: 'わさび', romaji: 'wasabi', price: 240 },
+      { japanese: 'しょうが', romaji: 'shouga', price: 280 },
+      { japanese: 'おてふき', romaji: 'otefuki', price: 280 },
+      { japanese: 'ほたてがい', romaji: 'hotategai', price: 360 },
+    ],
+    hard: [
+      { japanese: 'おおとろ', romaji: 'ootoro', price: 480 },
+      { japanese: 'しゃりがおいしい', romaji: 'sharigaoishii', price: 640 },
+      { japanese: 'かいてんずし', romaji: 'kaitenzushi', price: 560 },
+      { japanese: 'あぶりサーモン', romaji: 'aburisaamon', price: 600 },
+      { japanese: 'いくらぐんかん', romaji: 'ikuragunkan', price: 600 },
+      { japanese: 'ちゅうとろ', romaji: 'chuutoro', price: 520 },
+      { japanese: 'えんがわ', romaji: 'engawa', price: 480 },
+      { japanese: 'かんぱち', romaji: 'kanpachi', price: 480 },
+      { japanese: 'ぶりとろ', romaji: 'buritoro', price: 480 },
+      { japanese: 'ほたてのにぎり', romaji: 'hotatenonigiri', price: 680 },
+    ]
+  };
+
+  const courseSettings = {
+    easy: { name: 'お手軽3,000円コース', time: 60, cost: 3000 },
+    normal: { name: 'お勧め5,000円コース', time: 90, cost: 5000 },
+    hard: { name: '高級10,000円コース', time: 120, cost: 10000 }
+  };
+
+  const modeSettings = {
+    practice: { name: '練習', speed: 0.5, description: '普通よりスピードが遅い。制限時間が0になったら終了。' },
+    normal: { name: '普通', speed: 0.8, description: '普通のスピード。制限時間が0になったら終了。' },
+    accuracy: { name: '正確重視', speed: 0.8, description: 'ミスタイプをすると、タイプ中のお皿がリセットされ、新しい皿になる。' },
+    speed: { name: '速度必須', speed: 1.0, description: '1度でもお皿が画面外に流れていくか、制限時間が0になったら終了。' },
+    oneshot: { name: '一発勝負', speed: 0.8, description: 'ミスタイプをしたり、お皿が画面外に流れていくと、その場で終了。' }
+  };
+
+  useEffect(() => {
+    if (gameState === 'playing' && timeLeft > 0) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            setGameState('result');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [gameState, timeLeft]);
+
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const speed = modeSettings[mode].speed;
+      const moveInterval = setInterval(() => {
+        setSushiPosition(prev => {
+          if (prev <= -20) {
+            handleMissedSushi();
+            return 100;
+          }
+          return prev - speed;
+        });
+      }, 50);
+      return () => clearInterval(moveInterval);
+    }
+  }, [gameState, currentWord, mode]);
+
+  useEffect(() => {
+    if (gameState === 'playing') {
+      const handleKeyDown = (e) => {
+        if (e.key.length === 1 && /[a-z]/i.test(e.key)) {
+          e.preventDefault();
+          const key = e.key.toLowerCase();
+          const nextChar = currentRomaji[typedText.length];
+          
+          if (key === nextChar) {
+            const newTyped = typedText + key;
+            setTypedText(newTyped);
+            setCombo(prev => prev + 1);
+            
+            if (combo > 0 && combo % 10 === 0) {
+              setTimeLeft(prev => prev + 2);
+            }
+            
+            if (newTyped === currentRomaji) {
+              setScore(prev => prev + currentWord.price);
+              setCorrectCount(prev => prev + 1);
+              getNewWord();
+            }
+          } else {
+            handleMissType();
+          }
+        }
+      };
+
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [gameState, typedText, currentRomaji, currentWord, combo, mode]);
+
+  const handleMissType = () => {
+    setMissCount(prev => prev + 1);
+    setCombo(0);
+    
+    if (mode === 'accuracy') {
+      getNewWord();
+    } else if (mode === 'oneshot') {
+      setGameState('result');
+    }
+  };
+
+  const handleMissedSushi = () => {
+    setMissCount(c => c + 1);
+    setCombo(0);
+    
+    if (mode === 'speed' || mode === 'oneshot') {
+      setGameState('result');
+    } else {
+      getNewWord();
+    }
+  };
+
+  const getNewWord = () => {
+    const wordList = words[course];
+    const newWord = wordList[Math.floor(Math.random() * wordList.length)];
+    setCurrentWord(newWord);
+    setCurrentRomaji(newWord.romaji);
+    setTypedText('');
+    setSushiPosition(100);
+  };
+
+  const startGame = () => {
+    setGameState('playing');
+    setScore(0);
+    setTimeLeft(courseSettings[course].time);
+    setCorrectCount(0);
+    setMissCount(0);
+    setCombo(0);
+    setTypedText('');
+    const wordList = words[course];
+    const newWord = wordList[Math.floor(Math.random() * wordList.length)];
+    setCurrentWord(newWord);
+    setCurrentRomaji(newWord.romaji);
+    setSushiPosition(100);
+  };
+
+  const resetGame = () => {
+    setGameState('menu');
+    setShowModeSelect(false);
+  };
+
+  const selectCourse = (selectedCourse) => {
+    setCourse(selectedCourse);
+    setShowModeSelect(true);
+  };
+
+  const courseCost = courseSettings[course].cost;
+  const profit = score - courseCost;
+
+  return (
+    <div className="min-h-screen" style={{ background: 'linear-gradient(to bottom, #fff8dc 0%, #ffe4b5 100%)' }}>
+      <div className="max-w-6xl mx-auto p-6">
+        {/* ヘッダー */}
+        <div className="text-center mb-6">
+          <h1 
+            className="text-7xl font-black mb-1" 
+            style={{ 
+              color: '#CD853F',
+              textShadow: '4px 4px 0 #fff, 8px 8px 0 #8B4513',
+              fontFamily: 'Arial Black, sans-serif',
+              letterSpacing: '2px'
+            }}
+          >
+            寿司打
+          </h1>
+          <p className="text-xs text-gray-500 tracking-widest">Sushida - TypingGame</p>
+        </div>
+
+        {gameState === 'menu' && !showModeSelect && (
+          <div style={{ background: '#FFF', border: '5px solid #8B4513', borderRadius: '10px', padding: '40px' }}>
+            <h2 className="text-center text-3xl font-bold mb-8" style={{ color: '#8B4513' }}>
+              コースを選択してください
+            </h2>
+
+            <div className="space-y-6 max-w-3xl mx-auto">
+              <div style={{ border: '3px solid #90EE90', background: '#F0FFF0', borderRadius: '8px', padding: '24px' }}>
+                <h3 className="text-2xl font-bold mb-3" style={{ color: '#228B22' }}>お手軽 3,000円コース</h3>
+                <p className="text-gray-700 mb-4">文字数2〜7文字、制限時間60秒</p>
+                <button
+                  onClick={() => selectCourse('easy')}
+                  className="w-full font-bold py-3 px-6 rounded"
+                  style={{ background: '#32CD32', color: 'white' }}
+                  onMouseOver={(e) => e.target.style.background = '#228B22'}
+                  onMouseOut={(e) => e.target.style.background = '#32CD32'}
+                >
+                  スタート
+                </button>
+              </div>
+
+              <div style={{ border: '3px solid #87CEEB', background: '#F0F8FF', borderRadius: '8px', padding: '24px' }}>
+                <h3 className="text-2xl font-bold mb-3" style={{ color: '#4169E1' }}>お勧め 5,000円コース</h3>
+                <p className="text-gray-700 mb-4">文字数5〜10文字、制限時間90秒</p>
+                <button
+                  onClick={() => selectCourse('normal')}
+                  className="w-full font-bold py-3 px-6 rounded"
+                  style={{ background: '#4169E1', color: 'white' }}
+                  onMouseOver={(e) => e.target.style.background = '#1E40AF'}
+                  onMouseOut={(e) => e.target.style.background = '#4169E1'}
+                >
+                  スタート
+                </button>
+              </div>
+
+              <div style={{ border: '3px solid #FFB6C1', background: '#FFF0F5', borderRadius: '8px', padding: '24px' }}>
+                <h3 className="text-2xl font-bold mb-3" style={{ color: '#DC143C' }}>高級 10,000円コース</h3>
+                <p className="text-gray-700 mb-4">文字数9〜14文字以上、制限時間120秒</p>
+                <button
+                  onClick={() => selectCourse('hard')}
+                  className="w-full font-bold py-3 px-6 rounded"
+                  style={{ background: '#DC143C', color: 'white' }}
+                  onMouseOver={(e) => e.target.style.background = '#B22222'}
+                  onMouseOut={(e) => e.target.style.background = '#DC143C'}
+                >
+                  スタート
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {gameState === 'menu' && showModeSelect && (
+          <div style={{ background: '#FFF', border: '5px solid #8B4513', borderRadius: '10px', padding: '40px' }}>
+            <h2 className="text-center text-3xl font-bold mb-2" style={{ color: '#8B4513' }}>
+              モードを選択してください
+            </h2>
+            <p className="text-center text-xl text-gray-600 mb-8">{courseSettings[course].name}</p>
+
+            <div className="space-y-4 max-w-3xl mx-auto">
+              {Object.entries(modeSettings).map(([key, value]) => (
+                <div key={key} style={{ border: '2px solid #D3D3D3', background: '#FAFAFA', borderRadius: '6px', padding: '20px' }}>
+                  <h3 className="text-xl font-bold mb-2" style={{ color: '#333' }}>{value.name}</h3>
+                  <p className="text-sm text-gray-600 mb-3">{value.description}</p>
+                  <button
+                    onClick={() => { setMode(key); startGame(); }}
+                    className="w-full font-bold py-2 px-6 rounded"
+                    style={{ background: '#CD853F', color: 'white' }}
+                    onMouseOver={(e) => e.target.style.background = '#8B4513'}
+                    onMouseOut={(e) => e.target.style.background = '#CD853F'}
+                  >
+                    スタート
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="text-center mt-6">
+              <button
+                onClick={() => setShowModeSelect(false)}
+                className="underline"
+                style={{ color: '#4169E1' }}
+              >
+                ← コース選択に戻る
+              </button>
+            </div>
+          </div>
+        )}
+
+        {gameState === 'playing' && (
+          <div style={{ background: '#FFF', border: '5px solid #8B4513', borderRadius: '10px', overflow: 'hidden' }}>
+            {/* スコアエリア */}
+            <div style={{ background: 'linear-gradient(to bottom, #FFEFD5, #FFE4B5)', borderBottom: '5px solid #8B4513', padding: '16px' }}>
+              <div className="flex justify-between items-center">
+                <div className="text-lg">
+                  <span className="font-bold" style={{ color: '#8B4513' }}>獲得:</span>
+                  <span className="ml-2 font-bold text-2xl" style={{ color: '#4169E1' }}>{score}円</span>
+                </div>
+                <div className="text-center">
+                  <div className="text-xs mb-1" style={{ color: '#8B4513' }}>連打メーター</div>
+                  <div style={{ width: '200px', height: '16px', background: '#E5E5E5', borderRadius: '8px', overflow: 'hidden', border: '2px solid #999' }}>
+                    <div 
+                      style={{ 
+                        height: '100%', 
+                        background: 'linear-gradient(to right, #FFD700, #FF6347)',
+                        width: `${Math.min((combo % 10) * 10, 100)}%`,
+                        transition: 'width 0.1s'
+                      }}
+                    />
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: '#666' }}>コンボ: {combo}</div>
+                </div>
+                <div className="text-lg">
+                  <span className="font-bold" style={{ color: '#8B4513' }}>残り:</span>
+                  <span className="ml-2 font-bold text-3xl" style={{ color: '#DC143C' }}>{timeLeft}秒</span>
+                </div>
+              </div>
+            </div>
+
+            {/* ゲームエリア */}
+            <div style={{ position: 'relative', height: '280px', background: 'linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%)' }}>
+              {/* ベルトコンベア */}
+              <div style={{ 
+                position: 'absolute', 
+                bottom: 0, 
+                left: 0, 
+                right: 0, 
+                height: '100px',
+                background: 'linear-gradient(to bottom, #8B4513 0%, #654321 50%, #3E2723 100%)',
+                borderTop: '5px solid #5D4037'
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  backgroundImage: 'repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.1) 40px, rgba(255,255,255,0.1) 42px)'
+                }} />
+                {/* 寿司 */}
+                <div 
+                  style={{ 
+                    position: 'absolute', 
+                    top: '50%', 
+                    transform: 'translateY(-50%)',
+                    left: `${sushiPosition}%`,
+                    transition: 'left 0.05s linear',
+                    fontSize: '64px'
+                  }}
+                >
+                  🍣
+                </div>
+              </div>
+              
+              {/* テキスト表示エリア */}
+              <div style={{ position: 'absolute', top: '30px', left: 0, right: 0, textAlign: 'center' }}>
+                <div style={{ 
+                  background: 'rgba(255, 255, 255, 0.95)', 
+                  display: 'inline-block', 
+                  padding: '20px 40px', 
+                  borderRadius: '15px', 
+                  border: '3px solid #DDD',
+                  boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                }}>
+                  <div className="text-5xl font-bold mb-3" style={{ color: '#333' }}>
+                    {currentWord.japanese}
+                  </div>
+                  <div className="text-4xl" style={{ fontFamily: 'monospace' }}>
+                    <span className="font-bold" style={{ color: '#4169E1' }}>{typedText}</span>
+                    <span style={{ color: '#CCC' }}>{currentRomaji.slice(typedText.length)}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 下部情報 */}
+            <div style={{ background: 'linear-gradient(to bottom, #F5F5F5, #E8E8E8)', borderTop: '5px solid #8B4513', padding: '16px' }}>
+              <div className="flex justify-between text-base">
+                <div><span style={{ color: '#8B4513' }}>正解:</span> <span className="font-bold" style={{ color: '#228B22' }}>{correctCount}皿</span></div>
+                <div><span style={{ color: '#8B4513' }}>ミス:</span> <span className="font-bold" style={{ color: '#DC143C' }}>{missCount}回</span></div>
+                <div><span style={{ color: '#8B4513' }}>単価:</span> <span className="font-bold">{currentWord.price}円</span></div>
+                <div style={{ color: '#666' }}>{modeSettings[mode].name}モード</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {gameState === 'result' && (
+          <div style={{ background: '#FFF', border: '5px solid #8B4513', borderRadius: '10px', padding: '40px' }}>
+            <h2 className="text-center text-5xl font-bold mb-2" style={{ color: '#8B4513' }}>
+              結果発表
+            </h2>
+            <p className="text-center text-gray-600 mb-8">{courseSettings[course].name} - {modeSettings[mode].name}モード</p>
+            
+            <div className="max-w-xl mx-auto space-y-5 mb-8">
+              <div style={{ border: '3px solid #87CEEB', background: '#F0F8FF', borderRadius: '10px', padding: '24px' }}>
+                <div className="text-center">
+                  <div className="text-lg mb-2" style={{ color: '#666' }}>獲得金額</div>
+                  <div className="text-6xl font-bold" style={{ color: '#4169E1' }}>{score}円</div>
+                </div>
+              </div>
+
+              <div style={{ border: '3px solid #FFB347', background: '#FFF8DC', borderRadius: '10px', padding: '24px' }}>
+                <div className="text-center">
+                  <div className="text-lg mb-2" style={{ color: '#666' }}>お会計</div>
+                  <div className="text-6xl font-bold" style={{ color: '#FF8C00' }}>{courseCost}円</div>
+                </div>
+              </div>
+
+              <div style={{ 
+                border: `5px solid ${profit >= 0 ? '#90EE90' : '#FFB6C1'}`, 
+                background: profit >= 0 ? '#F0FFF0' : '#FFF0F5', 
+                borderRadius: '10px', 
+                padding: '32px' 
+              }}>
+                <div className="text-center">
+                  <div className="text-lg mb-2" style={{ color: '#666' }}>お得額</div>
+                  <div className="text-7xl font-bold" style={{ color: profit >= 0 ? '#228B22' : '#DC143C' }}>
+                    {profit >= 0 ? '+' : ''}{profit}円
+                  </div>
+                  {profit >= 0 && (
+                    <div className="mt-4 text-2xl font-bold" style={{ color: '#228B22' }}>
+                      🎉 元が取れました！
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div style={{ border: '2px solid #DDD', background: '#FAFAFA', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
+                  <div className="text-gray-600 mb-1">正解数</div>
+                  <div className="text-4xl font-bold" style={{ color: '#228B22' }}>{correctCount}皿</div>
+                </div>
+                <div style={{ border: '2px solid #DDD', background: '#FAFAFA', borderRadius: '8px', padding: '16px', textAlign: 'center' }}>
+                  <div className="text-gray-600 mb-1">ミス数</div>
+                  <div className="text-4xl font-bold" style={{ color: '#DC143C' }}>{missCount}回</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={resetGame}
+                className="font-bold text-2xl py-4 px-16 rounded"
+                style={{ background: '#CD853F', color: 'white' }}
+                onMouseOver={(e) => e.target.style.background = '#8B4513'}
+                onMouseOut={(e) => e.target.style.background = '#CD853F'}
+              >
+                タイトルへ戻る
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* フッター */}
+        <div className="text-center mt-6 text-sm text-gray-600">
+          <p>※キーボードで文字を入力してください</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SushiTypingGame;
