@@ -426,21 +426,26 @@
     }
 
     function getRemainingRomaji(){
-      if (currentPaths.length === 0) return '';
+      if (currentPaths.length === 0 || currentPatterns.length === 0) return '';
       
       let shortest = null;
       for (let path of currentPaths){
-        let remaining = path.partialInput;
+        let remaining = '';
         
         for (let i = path.position; i < currentPatterns.length; i++){
           const options = currentPatterns[i];
-          if (i === path.position && path.partialInput.length > 0){
+          if (!options || options.length === 0) continue;
+          
+          if (i === path.position){
+            // 現在の位置の残り文字
             const matchedOption = options.find(opt => opt.startsWith(path.partialInput));
             if (matchedOption){
-              remaining = matchedOption.slice(path.partialInput.length);
+              remaining += matchedOption.slice(path.partialInput.length);
+            } else {
+              remaining += options[0].slice(path.partialInput.length);
             }
-          }
-          if (i > path.position && options && options.length > 0){
+          } else {
+            // 次の位置以降
             remaining += options[0];
           }
         }
@@ -455,8 +460,12 @@
 
     function updateUIWord(){
       japaneseWordEl.textContent = currentWord ? currentWord.japanese : '---';
+      
+      // 打った部分と残りの部分を表示
+      const remaining = getRemainingRomaji();
       typedTextEl.textContent = typedText;
-      remainingRomajiEl.textContent = getRemainingRomaji();
+      remainingRomajiEl.textContent = remaining;
+      
       const meterPercent = Math.min((combo % 10) * 10, 100);
       meterInnerEl.style.width = meterPercent + '%';
       comboEl.textContent = 'コンボ: ' + combo;
