@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>寿司打 - Typing Game</title>
+  <style>
+    :root{
+      --brown:#8B4513;
+      --light-brown:#CD853F;
+      --accent:#4169E1;
+    }
+    html,body{height:100%;margin:0;font-family:"Noto Sans JP","Arial",sans-serif;background:linear-gradient(to bottom, #fff8dc 0%, #ffe4b5 100%);}
+    .container{max-width:960px;margin:24px auto;padding:24px;}
+    .card{background:#fff;border:5px solid var(--brown);border-radius:10px;padding:28px;box-shadow:0 8px 16px rgba(0,0,0,0.1);}
+    h1{font-size:4rem;margin:0;color:var(--light-brown);text-shadow:4px 4px 0 #fff,8px 8px 0 #8B4513;letter-spacing:2px;font-weight:900;animation:float 3s ease-in-out infinite;}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+    .muted{color:#666;font-size:0.9rem}
+    .center{text-align:center}
+    .btn{display:inline-block;padding:12px 24px;border-radius:8px;border:none;font-weight:700;cursor:pointer;transition:all 0.3s ease;transform:scale(1);}
+    .btn:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.2);}
+    .btn:active{transform:scale(0.95);}
+    .btn-green{background:#32CD32;color:#fff}
+    .btn-blue{background:#4169E1;color:#fff}
+    .btn-red{background:#DC143C;color:#fff}
+    .space-y > * + *{margin-top:1rem}
+    .course-box{padding:18px;border-radius:8px;transition:transform 0.3s ease,box-shadow 0.3s ease;}
+    .course-box:hover{transform:translateY(-5px);box-shadow:0 8px 16px rgba(0,0,0,0.15);}
+    .mode-box{padding:16px;border-radius:6px;border:2px solid #D3D3D3;background:#FAFAFA;margin-bottom:12px;transition:all 0.3s ease;}
+    .mode-box:hover{border-color:var(--accent);background:#F5F5FF;}
+    .game-top{background:linear-gradient(to bottom,#FFEFD5,#FFE4B5);border-bottom:5px solid var(--brown);padding:12px}
+    .belt{position:relative;height:280px;background:linear-gradient(to bottom,#87CEEB 0%, #E0F6FF 100%);overflow:hidden}
+    .conveyor{position:absolute;bottom:0;left:0;right:0;height:100px;background:linear-gradient(to bottom,#8B4513 0%, #654321 50%, #3E2723 100%);border-top:5px solid #5D4037}
+    .conveyor::before{content:"";position:absolute;inset:0;background-image:repeating-linear-gradient(90deg,transparent,transparent 40px, rgba(255,255,255,0.07) 40px, rgba(255,255,255,0.07) 42px);animation:scroll 2s linear infinite;}
+    @keyframes scroll{0%{background-position:0 0}100%{background-position:40px 0}}
+    .sushi{position:absolute;top:50%;transform:translateY(-50%);font-size:64px;left:100%;transition:font-size 0.1s ease;}
+    .sushi.correct{animation:bounce 0.3s ease;}
+    @keyframes bounce{0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.3)}}
+    .speech{position:absolute;top:30px;left:0;right:0;text-align:center}
+    .speech .box{display:inline-block;padding:20px 40px;border-radius:15px;border:3px solid #DDD;background:rgba(255,255,255,0.95);box-shadow:0 4px 6px rgba(0,0,0,0.1)}
+    .typed{font-family:monospace;font-size:2rem}
+    .bottom-info{background:linear-gradient(to bottom,#F5F5F5,#E8E8E8);border-top:5px solid var(--brown);padding:12px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .result-big{font-size:3rem;font-weight:800}
+    .meter{width:200px;height:16px;background:#E5E5E5;border-radius:8px;overflow:hidden;border:2px solid #999}
+    .meter-inner{height:100%;background:linear-gradient(to right,#FFD700,#FF6347);width:0%;transition:width 0.3s ease;}
+    .link{color:#4169E1;text-decoration:underline;cursor:pointer;transition:color 0.3s ease;}
+    .link:hover{color:#2E4C99;}
+    .footer{margin-top:16px;text-align:center;color:#666;font-size:.9rem}
+    .particle{position:absolute;font-size:24px;pointer-events:none;animation:particle-float 1s ease-out forwards;}
+    @keyframes particle-float{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-100px)}}
+    .shake{animation:shake 0.3s ease;}
+    @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+    .time-warning{animation:pulse 1s ease-in-out infinite;}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    @media(max-width:520px){
+      h1{font-size:2.4rem}
+      .speech .box{padding:12px 18px}
+      .sushi{font-size:48px}
+      .meter{width:150px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="app">
+      <div class="center">
+        <h1>寿司打</h1>
+        <p class="muted">Sushida - タイピングゲーム</p>
+      </div>
+
+      <div id="menu" class="card" style="margin-top:16px">
+        <h2 class="center" style="font-size:1.6rem;color:var(--brown)">🍣 コースを選択してください 🍣</h2>
+
+        <div class="space-y" style="margin-top:18px;max-width:720px;margin-left:auto;margin-right:auto">
+          <div class="course-box" style="border:3px solid #90EE90;background:#F0FFF0">
+            <h3 style="color:#228B22;margin:0;font-size:1.2rem">🌱 お手軽 3,000円コース</h3>
+            <p class="muted">文字数2〜7文字、制限時間60秒</p>
+            <button class="btn btn-green" id="start-easy">スタート</button>
+          </div>
+
+          <div class="course-box" style="border:3px solid #87CEEB;background:#F0F8FF">
+            <h3 style="color:#4169E1;margin:0;font-size:1.2rem">⭐ お勧め 5,000円コース</h3>
+            <p class="muted">文字数5〜10文字、制限時間90秒</p>
+            <button class="btn btn-blue" id="start-normal">スタート</button>
+          </div>
+
+          <div class="course-box" style="border:3px solid #FFB6C1;background:#FFF0F5">
+            <h3 style="color:#DC143C;margin:0;font-size:1.2rem">👑 高級 10,000円コース</h3>
+            <p class="muted">文字数9〜14文字以上、制限時間120秒</p>
+            <button class="btn btn-red" id="start-hard">スタート</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="mode-select" class="card" style="display:none;margin-top:16px">
+        <h2 class="center" style="font-size:1.6rem;color:var(--brown)">モードを選択してください</h2>
+        <p class="center muted" id="selected-course-name" style="margin-top:6px"></p>
+
+        <div style="max-width:720px;margin:16px auto">
+          <div id="modes-container"></div>
+
+          <div class="center" style="margin-top:12px">
+            <span class="link" id="back-to-course">← コース選択に戻る</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="playing" class="card" style="display:none;margin-top:16px;padding:0;overflow:hidden">
+        <div class="game-top">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>
+              <div style="color:var(--brown);font-weight:700">獲得:</div>
+              <div style="color:var(--accent);font-weight:800;font-size:1.6rem" id="score">0円</div>
+            </div>
+
+            <div style="text-align:center">
+              <div style="color:var(--brown);font-size:0.8rem">連打メーター</div>
+              <div class="meter" style="margin:auto">
+                <div class="meter-inner" id="meter-inner"></div>
+              </div>
+              <div class="muted" id="combo">コンボ: 0</div>
+            </div>
+
+            <div style="text-align:right">
+              <div style="color:var(--brown);font-weight:700">残り:</div>
+              <div style="color:#DC143C;font-weight:800;font-size:1.6rem" id="time-left">0秒</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="belt" id="belt">
+          <div class="speech">
+            <div class="box" id="speech-box">
+              <div class="typed" id="japanese-word" style="font-size:2.5rem;font-weight:800;color:#333">---</div>
+              <div style="font-family:monospace;font-size:1.6rem;margin-top:8px">
+                <span style="color:var(--accent);font-weight:800" id="typed-text"></span><span id="remaining-romaji" style="color:#CCC"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="conveyor">
+            <div id="sushi" class="sushi">🍣</div>
+          </div>
+        </div>
+
+        <div class="bottom-info">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+            <div>正解: <strong id="correct-count" style="color:#228B22">0皿</strong></div>
+            <div>ミス: <strong id="miss-count" style="color:#DC143C">0回</strong></div>
+            <div>単価: <strong id="unit-price">0円</strong></div>
+            <div id="mode-name" class="muted">-</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="result" class="card" style="display:none;margin-top:16px">
+        <h2 class="center" style="font-size:2rem;color:var(--brown)">🎊 結果発表 🎊</h2>
+        <p class="center muted" id="result-sub"></p>
+
+        <div style="max-width:720px;margin:20px auto" id="result-body">
+          <div style="border:3px solid #87CEEB;background:#F0F8FF;border-radius:10px;padding:18px;margin-bottom:12px;text-align:center">
+            <div class="muted">獲得金額</div>
+            <div class="result-big" id="result-score" style="color:var(--accent)">0円</div>
+          </div>
+
+          <div style="border:3px solid #FFB347;background:#FFF8DC;border-radius:10px;padding:18px;margin-bottom:12px;text-align:center">
+            <div class="muted">お会計</div>
+            <div class="result-big" id="result-cost" style="color:#FF8C00">0円</div>
+          </div>
+
+          <div id="profit-box" style="border-radius:10px;padding:24px;margin-bottom:12px;text-align:center"></div>
+
+          <div class="grid">
+            <div style="border:2px solid #DDD;background:#FAFAFA;border-radius:8px;padding:16px;text-align:center">
+              <div class="muted">正解数</div>
+              <div style="font-size:2rem;color:#228B22;font-weight:800" id="result-correct">0皿</div>
+            </div>
+            <div style="border:2px solid #DDD;background:#FAFAFA;border-radius:8px;padding:16px;text-align:center">
+              <div class="muted">ミス数</div>
+              <div style="font-size:2rem;color:#DC143C;font-weight:800" id="result-miss">0回</div>
+            </div>
+          </div>
+
+          <div style="border:2px solid #DDD;background:#FAFAFA;border-radius:8px;padding:16px;text-align:center;margin-top:12px;">
+            <div class="muted">正確率</div>
+            <div style="font-size:2rem;color:#4169E1;font-weight:800" id="result-accuracy">0%</div>
+          </div>
+        </div>
+
+        <div class="center" style="margin-top:12px">
+          <button class="btn" id="back-to-menu" style="background:var(--light-brown);color:#fff;padding:14px 28px;border-radius:10px">タイトルへ戻る</button>
+        </div>
+      </div>
+
+      <div class="footer">
+        <p>※キーボードで文字を入力してください</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ローマ字マップ
+    const romajiMap = {
+      'あ': ['a'], 'い': ['i', 'yi'], 'う': ['u', 'wu'], 'え': ['e'], 'お': ['o'],
+      'か': ['ka', 'ca'], 'き': ['ki'], 'く': ['ku', 'cu', 'qu'], 'け': ['ke'], 'こ': ['ko', 'co'],
+      'が': ['ga'], 'ぎ': ['gi'], 'ぐ': ['gu'], 'げ': ['ge'], 'ご': ['go'],
+      'さ': ['sa'], 'し': ['si', 'shi', 'ci'], 'す': ['su'], 'せ': ['se', 'ce'], 'そ': ['so'],
+      'ざ': ['za'], 'じ': ['zi', 'ji'], 'ず': ['zu'], 'ぜ': ['ze'], 'ぞ': ['zo'],
+      'た': ['ta'], 'ち': ['ti', 'chi'], 'つ': ['tu', 'tsu'], 'て': ['te'], 'と': ['to'],
+      'だ': ['da'], 'ぢ': ['di', 'dzi'], 'づ': ['du', 'dzu'], 'で': ['de'], 'ど': ['do'],
+      'な': ['na'], 'に': ['ni'], 'ぬ': ['nu'], 'ね': ['ne'], 'の': ['no'],
+      'は': ['ha'], 'ひ': ['hi'], 'ふ': ['hu', 'fu'], 'へ': ['he'], 'ほ': ['ho'],
+      'ば': ['ba'], 'び': ['bi'], 'ぶ': ['bu'], 'べ': ['be'], 'ぼ': ['bo'],
+      'ぱ': ['pa'], 'ぴ': ['pi'], 'ぷ': ['pu'], 'ぺ': ['pe'], 'ぽ': ['po'],
+      'ま': ['ma'], 'み': ['mi'], 'む': ['mu'], 'め': ['me'], 'も': ['mo'],
+      'や': ['ya'], 'ゆ': ['yu'], 'よ': ['yo'],
+      'ら': ['ra'], 'り': ['ri'], 'る': ['ru'], 'れ': ['re'], 'ろ': ['ro'],
+      'わ': ['wa'], 'を': ['wo'], 'ん': ['n', 'nn', 'xn'],
+      'ゃ': ['xya', 'lya'], 'ゅ': ['xyu', 'lyu'], 'ょ': ['xyo', 'lyo'],
+      'ぁ': ['xa', 'la'], 'ぃ': ['xi', 'li'], 'ぅ': ['xu', 'lu'], 'ぇ': ['xe', 'le'], 'ぉ': ['xo', 'lo'],
+      'っ': ['xtu', 'ltu', 'ltsu'],
+      'きゃ': ['kya'], 'きゅ': ['kyu'], 'きょ': ['kyo'],
+      'しゃ': ['sya', 'sha'], 'しゅ': ['syu', 'shu'], 'しょ': ['syo', 'sho'],
+      'ちゃ': ['tya', 'cha', 'cya'], 'ちゅ': ['tyu', 'chu', 'cyu'], 'ちょ': ['tyo', 'cho', 'cyo'],
+      'にゃ': ['nya'], 'にゅ': ['nyu'], 'にょ': ['nyo'],
+      'ひゃ': ['hya'], 'ひゅ': ['hyu'], 'ひょ': ['hyo'],
+      'みゃ': ['mya'], 'みゅ': ['myu'], 'みょ': ['myo'],
+      'りゃ': ['rya'], 'りゅ': ['ryu'], 'りょ': ['ryo'],
+      'ぎゃ': ['gya'], 'ぎゅ': ['gyu'], 'ぎょ': ['gyo'],
+      'じゃ': ['ja', 'jya', 'zya'], 'じゅ': ['ju', 'jyu', 'zyu'], 'じょ': ['jo', 'jyo', 'zyo'],
+      'びゃ': ['bya'], 'びゅ': ['byu'], 'びょ': ['byo'],
+      'ぴゃ': ['pya'], 'ぴゅ': ['pyu'], 'ぴょ': ['pyo'],
+      'ふぁ': ['fa'], 'ふぃ': ['fi'], 'ふぇ': ['fe'], 'ふぉ': ['fo'],
+      'てぃ': ['thi'], 'でぃ': ['dhi'],
+      'うぃ': ['wi'], 'うぇ': ['we'], 'うぉ': ['wo'],
+      'ー': ['-']
+    };
+
+    // ひらがなをローマ字パターンに変換
+    function convertToRomajiPatterns(hiragana) {
+      const patterns = [];
+      let i = 0;
+      while (i < hiragana.length) {
+        const char = hiragana[i];
+        const nextChar = hiragana[i + 1] || '';
+        const combo = char + nextChar;
+        
+        const twoChar = romajiMap[combo];
+        if (twoChar && twoChar.length > 0) {
+          patterns.push(twoChar);
+          i += 2;
+        } else {
+          const oneChar = romajiMap[char];
+          if (oneChar && oneChar.length > 0) {
+            patterns.push(oneChar);
+          } else {
+            patterns.push([char]);
+          }
+          i += 1;
+        }
+      }
+      return patterns;
+    }
+
+    const words = {
+      easy: [
+        { japanese: 'まぐろ', hiragana: 'まぐろ', price: 120 },
+        { japanese: 'さけ', hiragana: 'さけ', price: 100 },
+        { japanese: 'たまご', hiragana: 'たまご', price: 140 },
+        { japanese: 'いか', hiragana: 'いか', price: 100 },
+        { japanese: 'えび', hiragana: 'えび', price: 100 },
+        { japanese: 'うに', hiragana: 'うに', price: 150 },
+        { japanese: 'いくら', hiragana: 'いくら', price: 120 },
+        { japanese: 'あじ', hiragana: 'あじ', price: 100 },
+        { japanese: 'さば', hiragana: 'さば', price: 100 },
+        { japanese: 'たこ', hiragana: 'たこ', price: 100 }
+      ],
+      normal: [
+        { japanese: 'おいしい', hiragana: 'おいしい', price: 280 },
+        { japanese: 'ありがとう', hiragana: 'ありがとう', price: 320 },
+        { japanese: 'しんせん', hiragana: 'しんせん', price: 280 },
+        { japanese: 'すしや', hiragana: 'すしや', price: 260 },
+        { japanese: 'かいてん', hiragana: 'かいてん', price: 280 },
+        { japanese: 'おちゃ', hiragana: 'おちゃ', price: 200 },
+        { japanese: 'わさび', hiragana: 'わさび', price: 240 },
+        { japanese: 'しょうが', hiragana: 'しょうが', price: 280 },
+        { japanese: 'おてふき', hiragana: 'おてふき', price: 280 },
+        { japanese: 'ほたてがい', hiragana: 'ほたてがい', price: 360 }
+      ],
+      hard: [
+        { japanese: 'おおとろ', hiragana: 'おおとろ', price: 480 },
+        { japanese: 'しゃりがおいしい', hiragana: 'しゃりがおいしい', price: 640 },
+        { japanese: 'かいてんずし', hiragana: 'かいてんずし', price: 560 },
+        { japanese: 'あぶりサーモン', hiragana: 'あぶりさーもん', price: 600 },
+        { japanese: 'いくらぐんかん', hiragana: 'いくらぐんかん', price: 600 },
+        { japanese: 'ちゅうとろ', hiragana: 'ちゅうとろ', price: 520 },
+        { japanese: 'えんがわ', hiragana: 'えんがわ', price: 480 },
+        { japanese: 'かんぱち', hiragana: 'かんぱち', price: 480 },
+        { japanese: 'ぶりとろ', hiragana: 'ぶりとろ', price: 480 },
+        { japanese: 'ほたてのにぎり', hiragana: 'ほたてのにぎり', price: 680 }
+      ]
+    };
+
+    const courseSettings = {
+      easy: { name: 'お手軽3,000円コース', time: 60, cost: 3000 },
+      normal: { name: 'お勧め5,000円コース', time: 90, cost: 5000 },
+      hard: { name: '高級10,000円コース', time: 120, cost: 10000 }
+    };
+
+    const modeSettings = {
+      practice: { name: '練習', speed: 0.5, description: '普通よりスピードが遅い。制限時間が0になったら終了。' },
+      normal: { name: '普通', speed: 0.8, description: '普通のスピード。制限時間が0になったら終了。' },
+      accuracy: { name: '正確重視', speed: 0.8, description: 'ミスタイプをすると、タイプ中のお皿がリセットされ、新しい皿になる。' },
+      speed: { name: '速度必須', speed: 1.0, description: '1度でもお皿が画面外に流れていくか、制限時間が0になったら終了。' },
+      oneshot: { name: '一発勝負', speed: 0.8, description: 'ミスタイプをしたり、お皿が画面外に流れていくと、その場で終了。' }
+    };
+
+    const menuEl = document.getElementById('menu');
+    const modeSelectEl = document.getElementById('mode-select');
+    const playingEl = document.getElementById('playing');
+    const resultEl = document.getElementById('result');
+    const selectedCourseNameEl = document.getElementById('selected-course-name');
+    const modesContainer = document.getElementById('modes-container');
+    const japaneseWordEl = document.getElementById('japanese-word');
+    const typedTextEl = document.getElementById('typed-text');
+    const remainingRomajiEl = document.getElementById('remaining-romaji');
+    const sushiEl = document.getElementById('sushi');
+    const beltEl = document.getElementById('belt');
+    const speechBoxEl = document.getElementById('speech-box');
+    const scoreEl = document.getElementById('score');
+    const meterInnerEl = document.getElementById('meter-inner');
+    const comboEl = document.getElementById('combo');
+    const timeLeftEl = document.getElementById('time-left');
+    const correctCountEl = document.getElementById('correct-count');
+    const missCountEl = document.getElementById('miss-count');
+    const unitPriceEl = document.getElementById('unit-price');
+    const modeNameEl = document.getElementById('mode-name');
+    const resultSubEl = document.getElementById('result-sub');
+    const resultScoreEl = document.getElementById('result-score');
+    const resultCostEl = document.getElementById('result-cost');
+    const profitBoxEl = document.getElementById('profit-box');
+    const resultCorrectEl = document.getElementById('result-correct');
+    const resultMissEl = document.getElementById('result-miss');
+    const resultAccuracyEl = document.getElementById('result-accuracy');
+
+    let gameState = 'menu';
+    let course = 'normal';
+    let mode = 'normal';
+    let currentWord = null;
+    let currentPatterns = [];
+    let currentPaths = [];
+    let typedText = '';
+    let score = 0;
+    let timeLeft = 90;
+    let correctCount = 0;
+    let missCount = 0;
+    let combo = 0;
+    let totalKeystrokes = 0;
+    let sushiPosition = 100;
+    let timerInterval = null;
+    let moveInterval = null;
+    let keyHandler = null;
+
+    function showMenu(){ menuEl.style.display='block'; modeSelectEl.style.display='none'; playingEl.style.display='none'; resultEl.style.display='none'; gameState='menu'; }
+    function showModeSelect(){ menuEl.style.display='none'; modeSelectEl.style.display='block'; playingEl.style.display='none'; resultEl.style.display='none'; gameState='menu'; }
+    function showPlaying(){ menuEl.style.display='none'; modeSelectEl.style.display='none'; playingEl.style.display='block'; resultEl.style.display='none'; gameState='playing'; }
+    function showResult(){ menuEl.style.display='none'; modeSelectEl.style.display='none'; playingEl.style.display='none'; resultEl.style.display='block'; gameState='result'; }
+
+    function createParticle(emoji, x, y){
+      const particle = document.createElement('div');
+      particle.className = 'particle';
+      particle.textContent = emoji;
+      particle.style.left = x + 'px';
+      particle.style.top = y + 'px';
+      beltEl.appendChild(particle);
+      setTimeout(()=> particle.remove(), 1000);
+    }
+
+    function initModeButtons(){
+      modesContainer.innerHTML = '';
+      for (const key in modeSettings){
+        const m = modeSettings[key];
+        const div = document.createElement('div');
+        div.className = 'mode-box';
+        div.innerHTML = '<h3 style="margin:0;color:#333">'+m.name+'</h3><p class="muted" style="margin:6px 0 10px">'+m.description+'</p>';
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.background = 'var(--light-brown)';
+        btn.style.color = '#fff';
+        btn.style.display = 'block';
+        btn.style.width = '100%';
+        btn.style.padding = '10px';
+        btn.textContent = 'スタート';
+        btn.addEventListener('mouseover', ()=> btn.style.background = 'var(--brown)');
+        btn.addEventListener('mouseout', ()=> btn.style.background = 'var(--light-brown)');
+        btn.addEventListener('click', ()=> { mode = key; startGame(); });
+        div.appendChild(btn);
+        modesContainer.appendChild(div);
+      }
+    }
+    initModeButtons();
+
+    function pickRandomWord(){
+      const list = words[course];
+      return list[Math.floor(Math.random()*list.length)];
+    }
+
+    function setNewWord(w){
+      currentWord = w;
+      currentPatterns = convertToRomajiPatterns(w.hiragana);
+      typedText = '';
+      sushiPosition = 100;
+      initializePaths();
+      updateUIWord();
+      unitPriceEl.textContent = w.price + '円';
+      sushiEl.style.left = sushiPosition + '%';
+    }
+
+    function getNewWord(){
+      setNewWord(pickRandomWord());
+    }
+
+    function initializePaths(){
+      currentPaths = [{ position: 0, partialInput: '' }];
+    }
+
+    function getRemainingRomaji(){
+      if (currentPaths.length === 0) return '';
+      
+      let shortest = null;
+      for (let path of currentPaths){
+        let remaining = path.partialInput;
+        
+        for (let i = path.position; i < currentPatterns.length; i++){
+          const options = currentPatterns[i];
+          if (i === path.position && path.partialInput.length > 0){
+            const matchedOption = options.find(opt => opt.startsWith(path.partialInput));
+            if (matchedOption){
+              remaining = matchedOption.slice(path.partialInput.length);
+            }
+          }
+          if (i > path.position && options && options.length > 0){
+            remaining += options[0];
+          }
+        }
+        
+        if (shortest === null || remaining.length < shortest.length){
+          shortest = remaining;
+        }
+      }
+      
+      return shortest || '';
+    }
+
+    function updateUIWord(){
+      japaneseWordEl.textContent = currentWord ? currentWord.japanese : '---';
+      typedTextEl.textContent = typedText;
+      remainingRomajiEl.textContent = getRemainingRomaji();
+      const meterPercent = Math.min((combo % 10) * 10, 100);
+      meterInnerEl.style.width = meterPercent + '%';
+      comboEl.textContent = 'コンボ: ' + combo;
+    }
+
+    function updateScoreUI(){
+      scoreEl.textContent = score + '円';
+    }
+
+    function updateTimeUI(){
+      timeLeftEl.textContent = timeLeft + '秒';
+      if (timeLeft <= 10 && timeLeft > 0){
+        timeLeftEl.classList.add('time-warning');
+      } else {
+        timeLeftEl.classList.remove('time-warning');
+      }
+    }
+
+    function updateCountsUI(){
+      correctCountEl.textContent = correctCount + '皿';
+      missCountEl.textContent = missCount + '回';
+    }
+
+    function clearIntervals(){
+      if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+      if (moveInterval) { clearInterval(moveInterval); moveInterval = null; }
+      if (keyHandler) { window.removeEventListener('keydown', keyHandler); keyHandler = null; }
+    }
+
+    function startGame(){
+      score = 0;
+      timeLeft = courseSettings[course].time;
+      correctCount = 0;
+      missCount = 0;
+      totalKeystrokes = 0;
+      combo = 0;
+      sushiPosition = 100;
+      modeNameEl.textContent = modeSettings[mode].name + 'モード';
+      selectedCourseNameEl.textContent = courseSettings[course].name;
+      updateScoreUI(); updateTimeUI(); updateCountsUI();
+      getNewWord();
+      showPlaying();
+
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(()=>{
+        timeLeft--;
+        if (timeLeft <= 0){
+          timeLeft = 0;
+          updateTimeUI();
+          endGame();
+        } else {
+          updateTimeUI();
+        }
+      },1000);
+
+      if (moveInterval) clearInterval(moveInterval);
+      const speed = modeSettings[mode].speed;
+      moveInterval = setInterval(()=>{
+        sushiPosition = sushiPosition - speed;
+        sushiEl.style.left = sushiPosition + '%';
+        if (sushiPosition <= -20){
+          handleMissedSushi();
+          sushiPosition = 100;
+          sushiEl.style.left = sushiPosition + '%';
+        }
+      },50);
+
+      if (keyHandler) window.removeEventListener('keydown', keyHandler);
+      keyHandler = function(e){
+        if (gameState !== 'playing') return;
+        if (e.key.length === 1 && /[a-z-]/i.test(e.key)){
+          e.preventDefault();
+          const key = e.key.toLowerCase();
+          totalKeystrokes++;
+          
+          const newPaths = [];
+          
+          for (let path of currentPaths){
+            if (path.position >= currentPatterns.length) continue;
+            
+            const options = currentPatterns[path.position];
+            const testInput = path.partialInput + key;
+            
+            for (let option of options){
+              if (option.startsWith(testInput)){
+                if (testInput === option){
+                  newPaths.push({ position: path.position + 1, partialInput: '' });
+                } else {
+                  newPaths.push({ position: path.position, partialInput: testInput });
+                }
+              }
+            }
+          }
+          
+          if (newPaths.length > 0){
+            currentPaths = newPaths;
+            typedText += key;
+            combo++;
+            
+            const allComplete = currentPaths.every(p => p.position >= currentPatterns.length);
+            
+            if (combo > 0 && combo % 10 === 0){
+              timeLeft += 2;
+              updateTimeUI();
+              const rect = sushiEl.getBoundingClientRect();
+              createParticle('⏰+2', rect.left, rect.top);
+            }
+            
+            if (allComplete){
+              score += currentWord.price;
+              correctCount++;
+              sushiEl.classList.add('correct');
+              const rect = sushiEl.getBoundingClientRect();
+              createParticle('💰', rect.left, rect.top);
+              setTimeout(()=> sushiEl.classList.remove('correct'), 300);
+              updateScoreUI();
+              updateCountsUI();
+              getNewWord();
+            } else {
+              updateUIWord();
+            }
+          } else {
+            handleMissType();
+          }
+        }
+      };
+      window.addEventListener('keydown', keyHandler);
+      updateUIWord();
+    }
+
+    function handleMissType(){
+      missCount++;
+      combo = 0;
+      speechBoxEl.classList.add('shake');
+      setTimeout(()=> speechBoxEl.classList.remove('shake'), 300);
+      updateCountsUI();
+      if (mode === 'accuracy'){
+        getNewWord();
+      } else if (mode === 'oneshot'){
+        endGame();
+      } else {
+        initializePaths();
+        updateUIWord();
+      }
+    }
+
+    function handleMissedSushi(){
+      missCount++;
+      combo = 0;
+      updateCountsUI();
+      updateUIWord();
+      if (mode === 'speed' || mode === 'oneshot'){
+        endGame();
+      } else {
+        getNewWord();
+      }
+    }
+
+    function endGame(){
+      clearIntervals();
+      showResult();
+      const courseCost = courseSettings[course].cost;
+      const profit = score - courseCost;
+      const accuracy = totalKeystrokes > 0 ? Math.round((totalKeystrokes - missCount) / totalKeystrokes * 100) : 0;
+      
+      resultSubEl.textContent = courseSettings[course].name + ' - ' + modeSettings[mode].name + 'モード';
+      resultScoreEl.textContent = score + '円';
+      resultCostEl.textContent = courseCost + '円';
+      resultCorrectEl.textContent = correctCount + '皿';
+      resultMissEl.textContent = missCount + '回';
+      resultAccuracyEl.textContent = accuracy + '%';
+
+      profitBoxEl.style.border = '5px solid ' + (profit >= 0 ? '#90EE90' : '#FFB6C1');
+      profitBoxEl.style.background = profit >= 0 ? '#F0FFF0' : '#FFF0F5';
+      profitBoxEl.innerHTML = '<div class="muted">お得額</div><div style="font-size:2.4rem;font-weight:800;color:' + (profit >= 0 ? '#228B22' : '#DC143C') + '">' + (profit >= 0 ? '+' : '') + profit + '円</div>' + (profit >= 0 ? '<div style="margin-top:8px;font-size:1.2rem;font-weight:700;color:#228B22">🎉 元が取れました！</div>' : '<div style="margin-top:8px;font-size:1rem;color:#DC143C">次回頑張りましょう！</div>');
+    }
+
+    document.getElementById('start-easy').addEventListener('click', ()=>{
+      course = 'easy';
+      selectedCourseNameEl.textContent = courseSettings[course].name;
+      showModeSelect();
+    });
+    document.getElementById('start-normal').addEventListener('click', ()=>{
+      course = 'normal';
+      selectedCourseNameEl.textContent = courseSettings[course].name;
+      showModeSelect();
+    });
+    document.getElementById('start-hard').addEventListener('click', ()=>{
+      course = 'hard';
+      selectedCourseNameEl.textContent = courseSettings[course].name;
+      showModeSelect();
+    });
+
+    document.getElementById('back-to-course').addEventListener('click', ()=>{
+      showMenu();
+    });
+
+    document.getElementById('back-to-menu').addEventListener('click', ()=>{
+      clearIntervals();
+      showMenu();
+    });
+
+    document.addEventListener('selectstart', (e)=>e.preventDefault());
+  </script>
+</body>
+</html>
