@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>寿司打 - タイピングゲーム</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Sans JP', Arial, sans-serif;
+      background: linear-gradient(to bottom, #fff8dc, #ffe4b5);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container { max-width: 960px; margin: 0 auto; }
+    .card {
+      background: white;
+      border: 5px solid #8B4513;
+      border-radius: 10px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      font-size: 4rem;
+      color: #CD853F;
+      text-shadow: 4px 4px 0 #fff, 8px 8px 0 #8B4513;
+      margin-bottom: 10px;
+    }
+    .subtitle { text-align: center; color: #666; margin-bottom: 30px; }
+    .btn {
+      display: inline-block;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: transform 0.2s;
+      font-size: 1rem;
+    }
+    .btn:hover { transform: scale(1.05); }
+    .btn-green { background: #32CD32; color: white; }
+    .btn-blue { background: #4169E1; color: white; }
+    .btn-red { background: #DC143C; color: white; }
+    .btn-brown { background: #CD853F; color: white; }
+    .course-box {
+      border: 3px solid;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 15px 0;
+      transition: transform 0.3s;
+    }
+    .course-box:hover { transform: translateY(-5px); }
+    .mode-box {
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 10px 0;
+      background: #fafafa;
+    }
+    .game-area { position: relative; }
+    .game-header {
+      background: linear-gradient(to bottom, #FFEFD5, #FFE4B5);
+      border-bottom: 5px solid #8B4513;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .belt {
+      position: relative;
+      height: 300px;
+      background: linear-gradient(to bottom, #e8f4f8 0%, #d4e9f0 50%, #c0dfe8 100%);
+      overflow: hidden;
+      border-top: 3px solid #8B7355;
+      border-bottom: 3px solid #8B7355;
+    }
+    .conveyor {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 80px;
+      background: linear-gradient(to bottom, #6B4423 0%, #8B6332 20%, #A67C52 50%, #8B6332 80%, #6B4423 100%);
+      border-top: 4px solid #4A3018;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -2px 4px rgba(255,255,255,0.1);
+    }
+    .conveyor::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background-image: 
+        repeating-linear-gradient(
+          270deg,
+          transparent 0px,
+          transparent 38px,
+          rgba(255,255,255,0.1) 38px,
+          rgba(255,255,255,0.1) 40px,
+          transparent 40px,
+          transparent 45px
+        );
+      animation: conveyorMove 3s linear infinite;
+    }
+    .conveyor::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 100%;
+      background-image: 
+        repeating-linear-gradient(
+          270deg,
+          rgba(139,99,50,0.2) 0px,
+          rgba(139,99,50,0.2) 20px,
+          rgba(107,68,35,0.2) 20px,
+          rgba(107,68,35,0.2) 40px
+        );
+      opacity: 0.6;
+    }
+    @keyframes conveyorMove {
+      0% { background-position: 0 0; }
+      100% { background-position: -45px 0; }
+    }
+    .sushi-container {
+      position: absolute;
+      bottom: 25px;
+      left: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .sushi {
+      font-size: 64px;
+      filter: drop-shadow(0 3px 5px rgba(0,0,0,0.3));
+      margin-bottom: -8px;
+      z-index: 2;
+    }
+    .sushi-plate {
+      width: 90px;
+      height: 14px;
+      background: linear-gradient(to bottom, #F5F5F5 0%, #E0E0E0 30%, #D0D0D0 60%, #C0C0C0 100%);
+      border-radius: 50%;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.4), inset 0 1px 3px rgba(255,255,255,0.6);
+      position: relative;
+      z-index: 1;
+    }
+    .sushi-plate::before {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 12%;
+      right: 12%;
+      height: 5px;
+      background: linear-gradient(to bottom, rgba(255,255,255,0.7), transparent);
+      border-radius: 50%;
+    }
+    .sushi-plate::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 8%;
+      right: 8%;
+      height: 2px;
+      background: radial-gradient(ellipse at center, rgba(0,0,0,0.25), transparent);
+      border-radius: 50%;
+    }
+    .word-display {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      background: rgba(255,255,255,0.95);
+      padding: 20px 40px;
+      border-radius: 15px;
+      border: 3px solid #ddd;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    .japanese { font-size: 2.5rem; font-weight: bold; color: #333; }
+    .romaji { font-family: monospace; font-size: 1.6rem; margin-top: 10px; }
+    .typed { color: #4169E1; font-weight: bold; }
+    .remaining { color: #ccc; }
+    .game-footer {
+      background: linear-gradient(to bottom, #F5F5F5, #E8E8E8);
+      border-top: 5px solid #8B4513;
+      padding: 15px;
+      display: flex;
+      justify-content: space-around;
+      flex-wrap: wrap;
+    }
+    .meter {
+      width: 200px;
+      height: 16px;
+      background: #E5E5E5;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 2px solid #999;
+      margin: 5px auto;
+    }
+    .meter-fill {
+      height: 100%;
+      background: linear-gradient(to right, #FFD700, #FF6347);
+      width: 0%;
+      transition: width 0.3s;
+    }
+    .countdown-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .countdown-text {
+      color: white;
+      text-align: center;
+    }
+    .countdown-number {
+      font-size: 6rem;
+      font-weight: 900;
+      text-shadow: 0 0 30px rgba(255,255,255,0.5);
+    }
+    .hidden { display: none; }
+    .link { color: #4169E1; text-decoration: underline; cursor: pointer; }
+    .link:hover { color: #2E4C99; }
+    .result-box {
+      border-radius: 10px;
+      padding: 20px;
+      margin: 15px 0;
+      text-align: center;
+    }
+    .result-big { font-size: 3rem; font-weight: 800; }
+    .shake { animation: shake 0.3s; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      25% { transform: translateX(-50%) translateY(-8px); }
+      50% { transform: translateX(-50%) translateY(0); }
+      75% { transform: translateX(-50%) translateY(-8px); }
+    }
+    @media(max-width: 768px) {
+      h1 { font-size: 2.5rem; }
+      .btn { padding: 10px 20px; font-size: 0.95rem; }
+      .course-box { padding: 15px; }
+      .game-header { padding: 10px; gap: 10px; }
+      .game-header > div { min-width: 80px; }
+      .belt { height: 250px; }
+      .sushi { font-size: 48px; }
+      .word-display { padding: 15px 25px; }
+      .japanese { font-size: 2rem; }
+      .romaji { font-size: 1.3rem; }
+      .meter { width: 150px; height: 14px; }
+      .countdown-number { font-size: 4rem; }
+      .result-big { font-size: 2rem; }
+      .game-footer { padding: 10px; font-size: 0.9rem; }
+    }
+    @media(max-width: 480px) {
+      h1 { font-size: 2rem; }
+      .subtitle { font-size: 0.85rem; }
+      .btn { padding: 8px 16px; font-size: 0.9rem; }
+      .course-box { padding: 12px; margin: 10px 0; }
+      .course-box h3 { font-size: 1rem; }
+      .mode-box { padding: 12px; margin: 8px 0; }
+      .mode-box h3 { font-size: 1rem; }
+      .game-header { 
+        flex-direction: column; 
+        align-items: stretch;
+        padding: 8px;
+      }
+      .game-header > div { 
+        text-align: center; 
+        margin: 5px 0;
+      }
+      .belt { height: 220px; }
+      .sushi { font-size: 40px; }
+      .word-display { 
+        padding: 12px 20px;
+        top: 30px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        max-width: calc(100% - 20px);
+      }
+      .japanese { font-size: 1.6rem; }
+      .romaji { font-size: 1.1rem; margin-top: 8px; }
+      .meter { width: 120px; height: 12px; }
+      .countdown-number { font-size: 3rem; }
+      #countdownMsg { font-size: 1.2rem; }
+      .result-big { font-size: 1.5rem; }
+      .result-box { padding: 15px; }
+      .game-footer { 
+        flex-direction: column; 
+        padding: 8px;
+        font-size: 0.85rem;
+      }
+      .game-footer > div { margin: 3px 0; }
+    }
+    @media(max-width: 360px) {
+      h1 { font-size: 1.8rem; }
+      .card { padding: 15px; }
+      .japanese { font-size: 1.4rem; }
+      .romaji { font-size: 1rem; }
+      .sushi { font-size: 36px; }
+      .belt { height: 200px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>寿司打</h1>
+    <p class="subtitle">Sushida - タイピングゲーム</p>
+
+    <!-- メニュー画面 -->
+    <div id="menu" class="card">
+      <h2 style="text-align:center; color:#8B4513; margin-bottom:30px;">🍣 コースを選択してください 🍣</h2>
+      
+      <div class="course-box" style="border-color:#90EE90; background:#F0FFF0;">
+        <h3 style="color:#228B22;">🌱 お手軽 3,000円コース</h3>
+        <p style="color:#666; margin:10px 0;">文字数2〜7文字、制限時間60秒</p>
+        <button class="btn btn-green" onclick="selectCourse('easy')">スタート</button>
+      </div>
+
+      <div class="course-box" style="border-color:#87CEEB; background:#F0F8FF;">
+        <h3 style="color:#4169E1;">⭐ お勧め 5,000円コース</h3>
+        <p style="color:#666; margin:10px 0;">文字数5〜10文字、制限時間90秒</p>
+        <button class="btn btn-blue" onclick="selectCourse('normal')">スタート</button>
+      </div>
+
+      <div class="course-box" style="border-color:#FFB6C1; background:#FFF0F5;">
+        <h3 style="color:#DC143C;">👑 高級 10,000円コース</h3>
+        <p style="color:#666; margin:10px 0;">文字数9〜14文字以上、制限時間120秒</p>
+        <button class="btn btn-red" onclick="selectCourse('hard')">スタート</button>
+      </div>
+    </div>
+
+    <!-- モード選択画面 -->
+    <div id="modeSelect" class="card hidden">
+      <h2 style="text-align:center; color:#8B4513; margin-bottom:20px;">モードを選択してください</h2>
+      <p id="courseName" style="text-align:center; color:#666; margin-bottom:30px;"></p>
+      
+      <div id="modeList"></div>
+      
+      <div style="text-align:center; margin-top:20px;">
+        <span class="link" onclick="showScreen('menu')">← コース選択に戻る</span>
+      </div>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="game" class="card hidden" style="padding:0; overflow:hidden; position:relative;">
+      <div id="countdownOverlay" class="countdown-overlay hidden">
+        <div class="countdown-text">
+          <div id="countdownMsg" style="font-size:1.5rem; margin-bottom:20px;">スペースキーを押してスタート</div>
+          <div id="countdownNum" class="countdown-number">SPACE</div>
+        </div>
+      </div>
+
+      <div class="game-header">
+        <div>
+          <div style="color:#8B4513; font-weight:bold;">獲得:</div>
+          <div id="score" style="color:#4169E1; font-weight:800; font-size:1.5rem;">0円</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="color:#8B4513; font-size:0.85rem;">連打メーター</div>
+          <div class="meter"><div id="meterFill" class="meter-fill"></div></div>
+          <div id="combo" style="color:#666; font-size:0.9rem;">コンボ: 0</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="color:#8B4513; font-weight:bold;">残り:</div>
+          <div id="timeLeft" style="color:#DC143C; font-weight:800; font-size:1.5rem;">0秒</div>
+        </div>
+      </div>
+
+      <div class="belt">
+        <div class="word-display" id="wordDisplay">
+          <div id="japaneseWord" class="japanese">---</div>
+          <div class="romaji">
+            <span id="typedText" class="typed"></span><span id="remainingText" class="remaining"></span>
+          </div>
+        </div>
+        <div class="conveyor">
+          <div id="sushiContainer" class="sushi-container">
+            <div id="sushi" class="sushi">🍣</div>
+            <div class="sushi-plate"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="game-footer">
+        <div>正解: <strong id="correct" style="color:#228B22;">0皿</strong></div>
+        <div>ミス: <strong id="miss" style="color:#DC143C;">0回</strong></div>
+        <div>単価: <strong id="price">0円</strong></div>
+        <div id="modeName" style="color:#666;">-</div>
+      </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="result" class="card hidden">
+      <h2 style="text-align:center; color:#8B4513; margin-bottom:20px;">🎊 結果発表 🎊</h2>
+      <p id="resultSub" style="text-align:center; color:#666; margin-bottom:30px;"></p>
+
+      <div class="result-box" style="border:3px solid #87CEEB; background:#F0F8FF;">
+        <div style="color:#666;">獲得金額</div>
+        <div id="resultScore" class="result-big" style="color:#4169E1;">0円</div>
+      </div>
+
+      <div class="result-box" style="border:3px solid #FFB347; background:#FFF8DC;">
+        <div style="color:#666;">お会計</div>
+        <div id="resultCost" class="result-big" style="color:#FF8C00;">0円</div>
+      </div>
+
+      <div id="profitBox" class="result-box"></div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:15px; margin:20px 0;">
+        <div style="border:2px solid #ddd; border-radius:8px; padding:15px; text-align:center; background:#fafafa;">
+          <div style="color:#666;">正解数</div>
+          <div id="resultCorrect" style="font-size:2rem; color:#228B22; font-weight:800;">0皿</div>
+        </div>
+        <div style="border:2px solid #ddd; border-radius:8px; padding:15px; text-align:center; background:#fafafa;">
+          <div style="color:#666;">ミス数</div>
+          <div id="resultMiss" style="font-size:2rem; color:#DC143C; font-weight:800;">0回</div>
+        </div>
+        <div style="border:2px solid #ddd; border-radius:8px; padding:15px; text-align:center; background:#fafafa;">
+          <div style="color:#666;">正確率</div>
+          <div id="resultAccuracy" style="font-size:2rem; color:#4169E1; font-weight:800;">0%</div>
+        </div>
+      </div>
+
+      <div style="text-align:center; margin-top:30px;">
+        <button class="btn btn-brown" onclick="showScreen('menu')" style="padding:14px 28px; font-size:1.1rem;">タイトルへ戻る</button>
+      </div>
+    </div>
+
+    <div style="text-align:center; color:#666; margin-top:20px;">
+      <p>※キーボードで文字を入力してください</p>
+    </div>
+  </div>
+
+  <script>
+    // ローマ字変換マップ
+    const kanaToRomaji = {
+      'あ':['a'],'い':['i'],'う':['u'],'え':['e'],'お':['o'],
+      'か':['ka','ca'],'き':['ki'],'く':['ku','cu'],'け':['ke'],'こ':['ko','co'],
+      'が':['ga'],'ぎ':['gi'],'ぐ':['gu'],'げ':['ge'],'ご':['go'],
+      'さ':['sa'],'し':['si','shi','ci'],'す':['su'],'せ':['se'],'そ':['so'],
+      'ざ':['za'],'じ':['zi','ji'],'ず':['zu'],'ぜ':['ze'],'ぞ':['zo'],
+      'た':['ta'],'ち':['ti','chi'],'つ':['tu','tsu'],'て':['te'],'と':['to'],
+      'だ':['da'],'ぢ':['di'],'づ':['du'],'で':['de'],'ど':['do'],
+      'な':['na'],'に':['ni'],'ぬ':['nu'],'ね':['ne'],'の':['no'],
+      'は':['ha'],'ひ':['hi'],'ふ':['hu','fu'],'へ':['he'],'ほ':['ho'],
+      'ば':['ba'],'び':['bi'],'ぶ':['bu'],'べ':['be'],'ぼ':['bo'],
+      'ぱ':['pa'],'ぴ':['pi'],'ぷ':['pu'],'ぺ':['pe'],'ぽ':['po'],
+      'ま':['ma'],'み':['mi'],'む':['mu'],'め':['me'],'も':['mo'],
+      'や':['ya'],'ゆ':['yu'],'よ':['yo'],
+      'ら':['ra'],'り':['ri'],'る':['ru'],'れ':['re'],'ろ':['ro'],
+      'わ':['wa'],'を':['wo','o'],'ん':['n','nn','xn'],
+      'っ':['ltu','xtu','ltsu'],
+      'きゃ':['kya'],'きゅ':['kyu'],'きょ':['kyo'],
+      'しゃ':['sya','sha'],'しゅ':['syu','shu'],'しょ':['syo','sho'],
+      'ちゃ':['tya','cha','cya'],'ちゅ':['tyu','chu','cyu'],'ちょ':['tyo','cho','cyo'],
+      'にゃ':['nya'],'にゅ':['nyu'],'にょ':['nyo'],
+      'ひゃ':['hya'],'ひゅ':['hyu'],'ひょ':['hyo'],
+      'みゃ':['mya'],'みゅ':['myu'],'みょ':['myo'],
+      'りゃ':['rya'],'りゅ':['ryu'],'りょ':['ryo'],
+      'ぎゃ':['gya'],'ぎゅ':['gyu'],'ぎょ':['gyo'],
+      'じゃ':['ja','jya','zya'],'じゅ':['ju','jyu','zyu'],'じょ':['jo','jyo','zyo'],
+      'びゃ':['bya'],'びゅ':['byu'],'びょ':['byo'],
+      'ぴゃ':['pya'],'ぴゅ':['pyu'],'ぴょ':['pyo'],
+      'ー':['-']
+    };
+
+    // 単語データ
+    const words = {
+      easy: [
+        {japanese:'まぐろ',kana:'まぐろ',price:120},
+        {japanese:'さけ',kana:'さけ',price:100},
+        {japanese:'たまご',kana:'たまご',price:140},
+        {japanese:'いか',kana:'いか',price:100},
+        {japanese:'えび',kana:'えび',price:100},
+        {japanese:'うに',kana:'うに',price:150},
+        {japanese:'いくら',kana:'いくら',price:120},
+        {japanese:'あじ',kana:'あじ',price:100},
+        {japanese:'さば',kana:'さば',price:100},
+        {japanese:'たこ',kana:'たこ',price:100}
+      ],
+      normal: [
+        {japanese:'おいしい',kana:'おいしい',price:280},
+        {japanese:'ありがとう',kana:'ありがとう',price:320},
+        {japanese:'しんせん',kana:'しんせん',price:280},
+        {japanese:'すしや',kana:'すしや',price:260},
+        {japanese:'かいてん',kana:'かいてん',price:280},
+        {japanese:'おちゃ',kana:'おちゃ',price:200},
+        {japanese:'わさび',kana:'わさび',price:240},
+        {japanese:'しょうが',kana:'しょうが',price:280},
+        {japanese:'おてふき',kana:'おてふき',price:280},
+        {japanese:'ほたてがい',kana:'ほたてがい',price:360}
+      ],
+      hard: [
+        {japanese:'おおとろ',kana:'おおとろ',price:480},
+        {japanese:'しゃりがおいしい',kana:'しゃりがおいしい',price:640},
+        {japanese:'かいてんずし',kana:'かいてんずし',price:560},
+        {japanese:'あぶりサーモン',kana:'あぶりさーもん',price:600},
+        {japanese:'いくらぐんかん',kana:'いくらぐんかん',price:600},
+        {japanese:'ちゅうとろ',kana:'ちゅうとろ',price:520},
+        {japanese:'えんがわ',kana:'えんがわ',price:480},
+        {japanese:'かんぱち',kana:'かんぱち',price:480},
+        {japanese:'ぶりとろ',kana:'ぶりとろ',price:480},
+        {japanese:'ほたてのにぎり',kana:'ほたてのにぎり',price:680}
+      ]
+    };
+
+    const courses = {
+      easy: {name:'お手軽3,000円コース', time:60, cost:3000},
+      normal: {name:'お勧め5,000円コース', time:90, cost:5000},
+      hard: {name:'高級10,000円コース', time:120, cost:10000}
+    };
+
+    const modes = {
+      practice: {name:'練習', speed:0.5, desc:'普通よりスピードが遅い。制限時間が0になったら終了。'},
+      normal: {name:'普通', speed:0.8, desc:'普通のスピード。制限時間が0になったら終了。'},
+      accuracy: {name:'正確重視', speed:0.8, desc:'ミスタイプをすると、タイプ中のお皿がリセットされ、新しい皿になる。'},
+      speed: {name:'速度必須', speed:1.0, desc:'1度でもお皿が画面外に流れていくか、制限時間が0になったら終了。'},
+      oneshot: {name:'一発勝負', speed:0.8, desc:'ミスタイプをしたり、お皿が画面外に流れていくと、その場で終了。'}
+    };
+
+    // ゲーム状態
+    let state = {
+      course: 'normal',
+      mode: 'normal',
+      word: null,
+      patterns: [],
+      paths: [],
+      typed: '',
+      score: 0,
+      time: 90,
+      correct: 0,
+      miss: 0,
+      combo: 0,
+      totalKeys: 0,
+      sushiPos: 100,
+      timerId: null,
+      moveId: null,
+      countId: null,
+      waiting: false,
+      keyHandler: null
+    };
+
+    // ひらがなをローマ字パターンに変換
+    function kanaToPatterns(kana) {
+      const result = [];
+      let i = 0;
+      while (i < kana.length) {
+        const two = kana.substring(i, i + 2);
+        const one = kana[i];
+        if (kanaToRomaji[two]) {
+          result.push(kanaToRomaji[two]);
+          i += 2;
+        } else if (kanaToRomaji[one]) {
+          result.push(kanaToRomaji[one]);
+          i++;
+        } else {
+          result.push([one]);
+          i++;
+        }
+      }
+      return result;
+    }
+
+    // 残りのローマ字を取得
+    function getRemaining() {
+      if (!state.paths || state.paths.length === 0 || !state.patterns) return '';
+      let shortest = null;
+      for (let path of state.paths) {
+        let rem = '';
+        for (let i = path.pos; i < state.patterns.length; i++) {
+          const opts = state.patterns[i];
+          if (!opts || opts.length === 0) continue;
+          if (i === path.pos) {
+            const match = opts.find(o => o.startsWith(path.partial));
+            rem += (match || opts[0]).slice(path.partial.length);
+          } else {
+            rem += opts[0];
+          }
+        }
+        if (!shortest || rem.length < shortest.length) shortest = rem;
+      }
+      return shortest || '';
+    }
+
+    // UI更新
+    function updateUI() {
+      document.getElementById('japaneseWord').textContent = state.word ? state.word.japanese : '---';
+      document.getElementById('typedText').textContent = state.typed;
+      document.getElementById('remainingText').textContent = getRemaining();
+      document.getElementById('score').textContent = state.score + '円';
+      document.getElementById('timeLeft').textContent = state.time + '秒';
+      document.getElementById('correct').textContent = state.correct + '皿';
+      document.getElementById('miss').textContent = state.miss + '回';
+      document.getElementById('combo').textContent = 'コンボ: ' + state.combo;
+      const meter = Math.min((state.combo % 10) * 10, 100);
+      document.getElementById('meterFill').style.width = meter + '%';
+      if (state.word) {
+        document.getElementById('price').textContent = state.word.price + '円';
+      }
+    }
+
+    // 画面切り替え
+    function showScreen(screen) {
+      document.getElementById('menu').classList.add('hidden');
+      document.getElementById('modeSelect').classList.add('hidden');
+      document.getElementById('game').classList.add('hidden');
+      document.getElementById('result').classList.add('hidden');
+      document.getElementById(screen).classList.remove('hidden');
+    }
+
+    // コース選択
+    function selectCourse(course) {
+      state.course = course;
+      document.getElementById('courseName').textContent = courses[course].name;
+      
+      const list = document.getElementById('modeList');
+      list.innerHTML = '';
+      for (let key in modes) {
+        const m = modes[key];
+        const box = document.createElement('div');
+        box.className = 'mode-box';
+        box.innerHTML = `
+          <h3 style="margin:0 0 10px 0; color:#333;">${m.name}</h3>
+          <p style="color:#666; margin:0 0 15px 0; font-size:0.9rem;">${m.desc}</p>
+          <button class="btn btn-brown" onclick="startGame('${key}')">スタート</button>
+        `;
+        list.appendChild(box);
+      }
+      
+      showScreen('modeSelect');
+    }
+
+    // 新しい単語をセット
+    function setWord() {
+      const list = words[state.course];
+      state.word = list[Math.floor(Math.random() * list.length)];
+      state.patterns = kanaToPatterns(state.word.kana);
+      state.paths = [{pos: 0, partial: ''}];
+      state.typed = '';
+      state.sushiPos = 100;
+      const container = document.getElementById('sushiContainer');
+      if (container) container.style.left = '100%';
+      updateUI();
+    }
+
+    // ゲーム開始
+    function startGame(mode) {
+      // 前回のイベントリスナーを削除
+      if (state.keyHandler) {
+        document.removeEventListener('keydown', state.keyHandler);
+      }
+      
+      state.mode = mode;
+      state.score = 0;
+      state.time = courses[state.course].time;
+      state.correct = 0;
+      state.miss = 0;
+      state.combo = 0;
+      state.totalKeys = 0;
+      
+      setWord();
+      showScreen('game');
+      
+      document.getElementById('modeName').textContent = modes[mode].name + 'モード';
+      document.getElementById('countdownOverlay').classList.remove('hidden');
+      document.getElementById('countdownNum').textContent = 'SPACE';
+      document.getElementById('countdownMsg').textContent = 'スペースキーを押してスタート';
+      
+      state.waiting = true;
+      
+      const waitHandler = (e) => {
+        if (e.code === 'Space' && state.waiting) {
+          e.preventDefault();
+          document.removeEventListener('keydown', waitHandler);
+          startCountdown();
+        }
+      };
+      document.addEventListener('keydown', waitHandler);
+    }
+
+    // カウントダウン
+    function startCountdown() {
+      let count = 3;
+      document.getElementById('countdownNum').textContent = count;
+      document.getElementById('countdownMsg').textContent = 'ゲームスタート！';
+      state.waiting = false;
+      
+      state.countId = setInterval(() => {
+        count--;
+        if (count > 0) {
+          document.getElementById('countdownNum').textContent = count;
+        } else {
+          clearInterval(state.countId);
+          document.getElementById('countdownOverlay').classList.add('hidden');
+          startPlay();
+        }
+      }, 1000);
+    }
+
+    // ゲームプレイ開始
+    function startPlay() {
+      state.sushiPos = 100;
+      const container = document.getElementById('sushiContainer');
+      if (container) container.style.left = '100%';
+      
+      // タイマー
+      state.timerId = setInterval(() => {
+        state.time--;
+        updateUI();
+        if (state.time <= 0) {
+          endGame();
+        }
+      }, 1000);
+      
+      // 寿司移動
+      const speed = modes[state.mode].speed;
+      state.moveId = setInterval(() => {
+        state.sushiPos -= speed;
+        if (container) container.style.left = state.sushiPos + '%';
+        if (state.sushiPos <= -20) {
+          missedSushi();
+        }
+      }, 50);
+      
+      // キー入力
+      state.keyHandler = handleKey;
+      document.addEventListener('keydown', state.keyHandler);
+    }
+
+    // キー入力処理
+    function handleKey(e) {
+      if (!e.key || !e.key.match(/^[a-z]$/i)) return;
+      e.preventDefault();
+      
+      const key = e.key.toLowerCase();
+      state.totalKeys++;
+      
+      const newPaths = [];
+      for (let path of state.paths) {
+        if (path.pos >= state.patterns.length) continue;
+        const opts = state.patterns[path.pos];
+        if (!opts) continue;
+        const test = path.partial + key;
+        for (let opt of opts) {
+          if (opt.startsWith(test)) {
+            if (test === opt) {
+              newPaths.push({pos: path.pos + 1, partial: ''});
+            } else {
+              newPaths.push({pos: path.pos, partial: test});
+            }
+          }
+        }
+      }
+      
+      if (newPaths.length > 0) {
+        state.paths = newPaths;
+        state.typed += key;
+        state.combo++;
+        
+        if (state.combo > 0 && state.combo % 10 === 0) {
+          state.time += 2;
+        }
+        
+        const complete = state.paths.every(p => p.pos >= state.patterns.length);
+        if (complete) {
+          state.score += state.word.price;
+          state.correct++;
+          state.sushiPos = 100;
+          setWord();
+        }
+        updateUI();
+      } else {
+        handleMiss();
+      }
+    }
+
+    // ミス処理
+    function handleMiss() {
+      state.miss++;
+      state.combo = 0;
+      const box = document.getElementById('wordDisplay');
+      if (box) {
+        box.classList.add('shake');
+        setTimeout(() => box.classList.remove('shake'), 300);
+      }
+      
+      if (state.mode === 'accuracy') {
+        state.sushiPos = 100;
+        setWord();
+      } else if (state.mode === 'oneshot') {
+        endGame();
+      }
+      updateUI();
+    }
+
+    // 寿司が流れた
+    function missedSushi() {
+      state.miss++;
+      state.combo = 0;
+      
+      if (state.mode === 'speed' || state.mode === 'oneshot') {
+        endGame();
+      } else {
+        state.sushiPos = 100;
+        setWord();
+      }
+    }
+
+    // ゲーム終了
+    function endGame() {
+      if (state.timerId) {
+        clearInterval(state.timerId);
+        state.timerId = null;
+      }
+      if (state.moveId) {
+        clearInterval(state.moveId);
+        state.moveId = null;
+      }
+      if (state.countId) {
+        clearInterval(state.countId);
+        state.countId = null;
+      }
+      if (state.keyHandler) {
+        document.removeEventListener('keydown', state.keyHandler);
+        state.keyHandler = null;
+      }
+      
+      const cost = courses[state.course].cost;
+      const profit = state.score - cost;
+      const accuracy = state.totalKeys > 0 ? Math.round((state.totalKeys - state.miss) / state.totalKeys * 100) : 0;
+      
+      document.getElementById('resultSub').textContent = courses[state.course].name + ' - ' + modes[state.mode].name + 'モード';
+      document.getElementById('resultScore').textContent = state.score + '円';
+      document.getElementById('resultCost').textContent = cost + '円';
+      document.getElementById('resultCorrect').textContent = state.correct + '皿';
+      document.getElementById('resultMiss').textContent = state.miss + '回';
+      document.getElementById('resultAccuracy').textContent = accuracy + '%';
+      
+      const profitBox = document.getElementById('profitBox');
+      if (profit >= 0) {
+        profitBox.style.border = '5px solid #90EE90';
+        profitBox.style.background = '#F0FFF0';
+        profitBox.innerHTML = `
+          <div style="color:#666;">お得額</div>
+          <div class="result-big" style="color:#228B22;">+${profit}円</div>
+          <div style="margin-top:10px; font-size:1.2rem; font-weight:bold; color:#228B22;">🎉 元が取れました!</div>
+        `;
+      } else {
+        profitBox.style.border = '5px solid #FFB6C1';
+        profitBox.style.background = '#FFF0F5';
+        profitBox.innerHTML = `
+          <div style="color:#666;">お得額</div>
+          <div class="result-big" style="color:#DC143C;">${profit}円</div>
+          <div style="margin-top:10px; color:#DC143C;">次回頑張りましょう!</div>
+        `;
+      }
+      
+      showScreen('result');
+    }
+
+    // 初期表示
+    showScreen('menu');
+  </script>
+</body>
+</html>
